@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.core.mail import send_mail
-from .forms import LoginForm, RegisterForm,NicknameChangeForm,BindEmailForm
+from .forms import LoginForm, RegisterForm,NicknameChangeForm,BindEmailForm,ChangePasswordForm,ForgetPasswordForm
 from .models import Profile
 
 
@@ -150,3 +150,52 @@ def send_verification_code(request):
         data['status']='ERROR'
     # print(data)
     return JsonResponse(data)
+
+def change_password(request):
+    redirect_to = reverse('home')
+    if request.method == 'POST':
+        form=ChangePasswordForm(request.POST,user=request.user)
+        if form.is_valid():
+            user=request.user
+            old_password=form.cleaned_data['old_password']
+            new_password=form.cleaned_data['new_password']
+            user.set_password(new_password)#用set password保存密码，django通过特殊方式对密码加密
+            user.save()
+            auth.logout(request)#登出操作
+            return redirect(redirect_to)
+    else:
+        form =ChangePasswordForm()
+
+    context={}
+    context['form']=form
+    context['page_title']='修改密码'
+    context['form_title']='修改密码'
+    context['submit_text']='修改'
+    context['return_back_url']=redirect_to
+    return render(request,'form.html',context)
+
+def forget_password(request):
+    redirect_to =  reverse('home')
+    if request.method == 'POST':
+        form = ForgetPasswordForm(request.POST, request=request)
+        if form.is_valid():
+            email=form.cleaned_data['email']
+            new_password=form.cleaned_data['new_password']
+            user=User.objects.get(email=email)
+            user.set_password(request)
+            user.save()
+
+            del request.session['forget_password_code']
+            return redirect(redirect_to)
+    else:
+        form = ForgetPasswordForm()
+
+    context = {}
+    context['form'] = form
+    context['page_title'] = '重置密码'
+    context['form_title'] = '重置密码'
+    context['submit_text'] = '重置'
+    context['return_back_url'] = redirect_to
+    return render(request, 'forget_password.html', context)
+
+

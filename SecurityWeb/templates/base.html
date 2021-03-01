@@ -46,6 +46,7 @@
                         </a>
                             <ul class="dropdown-menu">
                                 <li><a href="{% url 'user_info' %}">个人资料</a></li>
+                                <li><a href="{% url 'change_password' %}">修改密码</a></li>
                                 <li><a href="{% url 'admin:index' %}">后台管理</a></li> <!--指向admin的索引页-->
                                 <li><a href="{% url 'logout' %}?from={{request.get_full_path}}">退出登录</a></li>
                             </ul>
@@ -100,7 +101,6 @@
             });
         });
         </script>
-
     {% block script_extends %}{% endblock %}
 </body>
 </html>

@@ -47,7 +47,6 @@ class RegisterForm(forms.Form):
           # 判断验证码
           code = self.request.session.get('register_code', '')
           verification_code = self.cleaned_data.get('verification_code', '')
-          print('code:%s' % code, 'verification_code:%s' % verification_code)
           if not (code != '' and code == verification_code):
                raise forms.ValidationError('验证码不正确')
           return self.cleaned_data
@@ -149,9 +148,65 @@ class BindEmailForm(forms.Form):
 
 
 class ChangePasswordForm(forms.Form):
-      old_password=forms.CharField(label='旧的密码',min_length=6,widget=forms.PasswordInput(\
-          attrs={'class':'form-control','placeholder':'请输入密码'}))
-      new_password=forms.CharField(label='密码',min_length=6,widget=forms.PasswordInput(\
-          attrs={'class':'form-control','placeholder':'请输入密码'}))
-      new_password_again=forms.CharField(label='再输入一次密码',min_length=6,widget=forms.PasswordInput(\
+     old_password=forms.CharField(label='旧的密码',min_length=6,widget=forms.PasswordInput(\
+          attrs={'class':'form-control','placeholder':'请输入旧的密码'}))
+     new_password=forms.CharField(label='新的密码',min_length=6,widget=forms.PasswordInput(\
+          attrs={'class':'form-control','placeholder':'请输入新的密码'}))
+     new_password_again=forms.CharField(label='再输入一次密码',min_length=6,widget=forms.PasswordInput(\
           attrs={'class': 'form-control', 'placeholder': '请输入密码'}))
+
+     def __init__(self, *args, **kwargs):
+          if 'user' in kwargs:
+               self.user = kwargs.pop('user')
+          super(ChangePasswordForm, self).__init__(*args, **kwargs)
+
+     def clean(self):
+          #验证两次密码是否一致
+          new_password=self.cleaned_data.get('new_password','')
+          new_password_again=self.cleaned_data.get('new_password_again','')
+          if new_password != new_password_again or new_password=='':
+               raise forms.ValidationError('两次输入的密码不一致')
+          return self.cleaned_data
+
+
+     def clean_old_password(self):
+          #验证旧的密码是否正确
+          old_password=self.cleaned_data.get('old_password','')
+          if not self.user.check_password(old_password):
+               raise forms.ValidationError('输入的旧密码不正确')
+          return old_password
+
+class ForgetPasswordForm(forms.Form):
+     email =forms.EmailField(label='邮箱',widget=forms.EmailInput(\
+          attrs={'class':'form-control','placeholder':'请输入绑定的邮箱'}))
+     verification_code=forms.CharField(label='验证码' ,required=False,widget=forms.TextInput(\
+          attrs={'class':'form-control','placeholder':'点击"验证码"发送到邮箱 '}))
+     newpassword = forms.CharField(label='新的密码',min_length=6,widget=forms.PasswordInput(\
+          attrs={'class':'form-control','placeholder':'请输入新的密码'}))
+
+     def __init__(self, *args, **kwargs):
+          if 'request' in kwargs:
+               self.request = kwargs.pop('request')
+          super(ForgetPasswordForm , self).__init__(*args, **kwargs)
+
+     def clean_email(self):
+          email = self.cleaned_data.get['email'].strip()
+          if not User.objects.get(email=email).exists():
+               raise forms.ValidationError('邮箱不存在')
+          return email
+
+     def clean_verification_code(self):
+          verification_code=self.cleaned_data.get('verification_code','').strip()
+          if verification_code =='':
+               raise forms.ValidationError ('验证码不能为空')
+
+          # 判断验证码
+          code = self.request.session.get('register_code', '')
+          verification_code = self.cleaned_data.get('forget_password_code', '')
+          if not (code != '' and code == verification_code):
+               raise forms.ValidationError('验证码不正确')
+
+          return verification_code
+
+
+
