@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    我的网站｜注册
+{% endblock %}
+
+{% block nav_home_active %}active{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                {% if not user.is_authenticated %}
+                    <div class="panel panel-info">
+                  <div class="panel-heading">
+                    <h3 class="panel-title">注册</h3>
+                  </div>
+                  <div class="panel-body">
+                     <form action=""  method="POST">
+                        {% csrf_token %}
+                        {% for field in register_form %}
+                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            <p class="text-danger">{{ field.errors.as_text }}</p>
+                        {% endfor %}
+                         <span class="pull-left text-danger">{{ login_form.non_field_errors }}</span>
+                         <div class="clearfix"></div> <!--清除浮动-->
+                         <button id='send_code' style="margin-top:1em" class="btn btn-primary pull-left">发送验证码</button>
+                        <input style="margin-top:1em" type="submit" value="注册" class="btn btn-primary pull-right ">
+                     </form>
+                  </div>
+                </div>
+                {% else %}
+                    <span>已登录，跳转到首页... </span>
+                    <script type="text/javascript">window.location.href='/';</script>
+                {% endif  %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script_extends %}
+    <script type="text/javascript">
+        $("#send_code").click(function(){
+            event.preventDefault();
+            var email= $("#id_email").val(); //保存邮箱
+            if(email==""){
+            $("#tip").text('*邮箱地址不能为空');
+            return false;
+            }
+            //发送验证码
+            $.ajax({
+                url:"{% url 'send_verification_code' %}",
+                type:"GET",
+                data:{
+                    'email': email,
+                    'send_for':'register_code',
+                },
+                cache:false,
+                success: function(data){
+                    if(data['status'] =='ERROR'){
+                        alert(data['status']);
+                        }
+                }
+            });
+            //把按钮变灰 （不能让用户一直点发送验证码，这样会影响服务器性能
+            $(this).addClass('disabled');
+            $(this).attr('disabled',true);//按钮能变灰色
+            //倒计时操作
+            var time =30;
+            $(this).text(time+'s');
+            var interval =setInterval(()=>{
+                if(time<=0){
+                    clearInterval(interval)
+                    $(this).removeClass('disabled'); //移除按钮
+                    $(this).attr('disabled',false);//按钮颜色恢复
+                    $(this).text('发送验证码');
+                    return false;
+                }
+                time --;
+                $(this).text(time+'s');
+            },1000);
+        });
+
+    </script>
+{% endblock %}
